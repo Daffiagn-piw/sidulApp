@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Admin - SiDul BPS</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --bps-blue: #043277;
+            --bps-orange: #F7941D;
+            --bps-green: #00A651;
+            --background: #f4f7fa;
+        }
+
+        body { background-color: var(--background); font-family: 'Inter', sans-serif; }
+        .navbar { background-color: var(--bps-blue); border-bottom: 4px solid var(--bps-orange); }
+        .logo-img { height: 45px; width: 45px; border: 2px solid #fff; }
+
+        .status-badge { font-size: 0.75rem; padding: 5px 12px; border-radius: 4px; font-weight: 700; }
+        .bg-baru { background-color: #dee2e6; color: #495057; }
+        .bg-proses { background-color: #fff4e5; color: var(--bps-orange); border: 1px solid var(--bps-orange); }
+        .bg-selesai { background-color: #e6f6ee; color: var(--bps-green); border: 1px solid var(--bps-green); }
+
+        .table-bps { background-color: var(--bps-blue); color: white; }
+
+        .summary-card { border-radius: 8px; border: none; }
+        .summary-num { font-size: 1.8rem; font-weight: 800; }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar navbar-dark shadow-sm">
+        <div class="container py-1">
+            <a class="navbar-brand d-flex align-items-center" href="#">
+                <img src="logo_sidulApp.jpeg" alt="Logo SiDul" class="logo-img rounded-circle me-3">
+                <h5 class="fw-bold mb-0">Admin Panel - SiDul BPS</h5>
+            </a>
+            <button onclick="logout()" class="btn btn-outline-light btn-sm">Logout / Keluar</button>
+        </div>
+    </nav>
+
+    <div class="container mt-4 mb-5">
+        <div class="row g-3 mb-3">
+            <div class="col-6 col-md-3">
+                <div class="card summary-card shadow-sm text-center p-3">
+                    <div class="summary-num" style="color: var(--bps-blue)" id="sum-total">0</div>
+                    <div class="small text-muted">Total Laporan</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="card summary-card shadow-sm text-center p-3">
+                    <div class="summary-num" style="color:#495057" id="sum-baru">0</div>
+                    <div class="small text-muted">Baru</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="card summary-card shadow-sm text-center p-3">
+                    <div class="summary-num" style="color: var(--bps-orange)" id="sum-proses">0</div>
+                    <div class="small text-muted">Proses</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="card summary-card shadow-sm text-center p-3">
+                    <div class="summary-num" style="color: var(--bps-green)" id="sum-selesai">0</div>
+                    <div class="small text-muted">Selesai</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-header bg-white py-3">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <h5 class="mb-0 fw-bold" style="color: var(--bps-blue)">📊 Dashboard Monitoring Data Pengaduan</h5>
+                    <div>
+                        <button class="btn btn-sm btn-success me-2" onclick="exportKeCSV()">📥 Export CSV</button>
+                        <button class="btn btn-sm btn-outline-primary" onclick="ambilDataDashboard()">Segarkan Data</button>
+                    </div>
+                </div>
+                <div class="row g-2 mt-2">
+                    <div class="col-md-6">
+                        <input type="text" id="inp-search" class="form-control form-control-sm" placeholder="Cari nama, isi aduan, atau ID laporan...">
+                    </div>
+                    <div class="col-md-3">
+                        <select id="filter-kategori" class="form-select form-select-sm">
+                            <option value="">Semua Kategori</option>
+                            <option value="Fraud">Fraud</option>
+                            <option value="Kepegawaian">Kepegawaian</option>
+                            <option value="Konflik Kepentingan">Konflik Kepentingan</option>
+                            <option value="Pelayanan Statistik">Pelayanan Statistik</option>
+                            <option value="Lainnya">Lainnya</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <select id="filter-status" class="form-select form-select-sm">
+                            <option value="">Semua Status</option>
+                            <option value="baru">Baru</option>
+                            <option value="proses">Proses</option>
+                            <option value="selesai">Selesai</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-bps text-uppercase small text-center">
+                            <tr>
+                                <th class="py-3">No.</th>
+                                <th>ID Laporan</th>
+                                <th>Tanggal</th>
+                                <th>Kategori</th>
+                                <th>Ringkasan Pengaduan</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabel-body" class="small text-start">
+                            <tr><td colspan="6" class="py-5 text-center">Memuat data pengaduan...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL TINDAK LANJUT -->
+    <div class="modal fade" id="modalTindakLanjut" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title fw-bold">📝 Entri Tindak Lanjut</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <input type="hidden" id="tl-report-id">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Catatan / Respon Admin</label>
+                        <textarea id="tl-catatan" class="form-control shadow-sm" rows="5" placeholder="Tuliskan tindakan yang telah dilakukan untuk menyelesaikan pengaduan ini..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="button" class="btn btn-primary" onclick="simpanTindakLanjut()">Simpan Catatan</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="text-center py-4 mt-5">
+        <p class="text-muted small">© 2026 SiDul - BPS Provinsi Kepulauan Bangka Belitung</p>
+    </footer>
+
+    <!-- Bootstrap JS (Wajib untuk Modal) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        const SESSION_MAX_AGE_MS = 2 * 60 * 60 * 1000; // 2 jam
+
+        function isSessionValid() {
+            if (sessionStorage.getItem('isAdminLoggedIn') !== 'true') return false;
+            if (!sessionStorage.getItem('adminToken')) return false;
+            const loginTime = parseInt(sessionStorage.getItem('adminLoginTime') || '0', 10);
+            if (!loginTime || (Date.now() - loginTime) > SESSION_MAX_AGE_MS) return false;
+            return true;
+        }
+
+        if (!isSessionValid()) {
+            sessionStorage.removeItem('isAdminLoggedIn');
+            sessionStorage.removeItem('adminLoginTime');
+            sessionStorage.removeItem('adminToken');
+            alert('Akses ditolak atau sesi telah berakhir! Silakan login kembali.');
+            window.location.href = 'index.html';
+        }
+
+        const ADMIN_TOKEN = sessionStorage.getItem('adminToken');
+
+        function logout() {
+            sessionStorage.removeItem('isAdminLoggedIn');
+            sessionStorage.removeItem('adminLoginTime');
+            sessionStorage.removeItem('adminToken');
+            window.location.href = 'index.html';
+        }
+
+        const URL_GAS = 'https://script.google.com/macros/s/AKfycbyV6pbVg_ltLYEKCFVfWWnyse1jdPpuYiG-WORSipB1k5OZLheYZsL1LLzRTadrSP8AWQ/exec';
+        const tabelBody = document.getElementById('tabel-body');
+        let semuaData = [];
+
+        function escapeHtml(str) {
+            if (str === null || str === undefined) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        function isUrlAman(url) {
+            return typeof url === 'string' && /^https?:\/\//i.test(url);
+        }
+
+        async function ambilDataDashboard() {
+            tabelBody.innerHTML = '<tr><td colspan="6" class="py-5 text-center"><div class="spinner-border text-primary" role="status"></div><br>Menghubungkan ke server...</td></tr>';
+
+            try {
+                const response = await fetch(`${URL_GAS}?token=${encodeURIComponent(ADMIN_TOKEN)}`);
+                const data = await response.json();
+
+                if (data && data.error === 'Unauthorized') {
+                    alert('Sesi admin tidak valid. Silakan login kembali.');
+                    logout();
+                    return;
+                }
+
+                semuaData = Array.isArray(data) ? data.slice().reverse() : [];
+                renderTabel();
+                updateRingkasan();
+            } catch (error) {
+                console.error("Dashboard Error:", error);
+                tabelBody.innerHTML = '<tr><td colspan="6" class="py-5 text-center text-danger">Gagal memuat dashboard.</td></tr>';
+            }
+        }
+
+        function updateRingkasan() {
+            const total = semuaData.length;
+            let baru = 0, proses = 0, selesai = 0;
+            semuaData.forEach(item => {
+                const st = (item.status || 'baru').toLowerCase();
+                if (st === 'proses') proses++;
+                else if (st === 'selesai') selesai++;
+                else baru++;
+            });
+            document.getElementById('sum-total').innerText = total;
+            document.getElementById('sum-baru').innerText = baru;
+            document.getElementById('sum-proses').innerText = proses;
+            document.getElementById('sum-selesai').innerText = selesai;
+        }
+
+        function renderTabel() {
+            const q = (document.getElementById('inp-search').value || '').toLowerCase().trim();
+            const fKategori = document.getElementById('filter-kategori').value;
+            const fStatus = document.getElementById('filter-status').value;
+
+            const filtered = semuaData.filter(item => {
+                const st = (item.status || 'baru').toLowerCase();
+                if (fKategori && item.kategori !== fKategori) return false;
+                if (fStatus && st !== fStatus) return false;
+                if (q) {
+                    const haystack = `${item.nama || ''} ${item.isiAduan || ''} ${item.reportId || ''}`.toLowerCase();
+                    if (!haystack.includes(q)) return false;
+                }
+                return true;
+            });
+
+            tabelBody.innerHTML = '';
+
+            if (filtered.length === 0) {
+                tabelBody.innerHTML = '<tr><td colspan="6" class="py-5 text-center text-muted">Tidak ada data pengaduan yang cocok.</td></tr>';
+                return;
+            }
+
+            filtered.forEach((item, index) => {
+                const tgl = item.timestamp ? new Date(item.timestamp).toLocaleDateString('id-ID', {
+                    day: '2-digit', month: 'short', year: 'numeric'
+                }) : '-';
+
+                let badgeClass = 'bg-baru';
+                const st = item.status ? item.status.toLowerCase() : '';
+                if (st === 'proses') badgeClass = 'bg-proses';
+                if (st === 'selesai') badgeClass = 'bg-selesai';
+
+                const linkBukti = (item.bukti && item.bukti !== "Tidak ada bukti" && isUrlAman(item.bukti))
+                    ? `<a href="${escapeHtml(item.bukti)}" target="_blank" class="btn btn-sm btn-outline-secondary mt-1">📂 Lihat Bukti</a>`
+                    : '<span class="text-muted small d-block mt-1">Tanpa Bukti</span>';
+
+                const baris = `
+                    <tr>
+                        <td class="text-center fw-bold">${index + 1}</td>
+                        <td class="fw-bold ps-3 text-center">${escapeHtml(item.reportId)}</td>
+                        <td class="text-center">${escapeHtml(tgl)}</td>
+                        <td><span class="badge text-dark border">${escapeHtml(item.kategori)}</span></td>
+                        <td>
+                            <div class="small fw-bold mb-1">${escapeHtml(item.isiAduan)}</div>
+                            ${item.nama ? `<div class="small text-muted">Pelapor: ${escapeHtml(item.nama)}</div>` : ''}
+                            ${linkBukti}
+                        </td>
+                        <td class="text-center">
+                            <span class="status-badge ${badgeClass} d-block mb-1">${escapeHtml(item.status || 'Menunggu')}</span>
+                            <select class="form-select form-select-sm status-select mb-1" data-report-id="${escapeHtml(item.reportId)}">
+                                <option value="Menunggu" ${st === 'menunggu' || !st ? 'selected' : ''}>Menunggu</option>
+                                <option value="Proses" ${st === 'proses' ? 'selected' : ''}>Proses</option>
+                                <option value="Selesai" ${st === 'selesai' ? 'selected' : ''}>Selesai</option>
+                            </select>
+                            <button class="btn btn-sm btn-outline-info w-100 mt-1 fw-bold" onclick="bukaModalTindakLanjut('${escapeHtml(item.reportId)}')">
+                                📝 Tindak Lanjut
+                            </button>
+                        </td>
+                    </tr>
+                `;
+                tabelBody.innerHTML += baris;
+            });
+
+            document.querySelectorAll('.status-select').forEach(sel => {
+                sel.addEventListener('change', onUbahStatus);
+            });
+        }
+
+        async function onUbahStatus(e) {
+            const select = e.target;
+            const reportId = select.dataset.reportId;
+            const newStatus = select.value;
+            select.disabled = true;
+
+            try {
+                const response = await fetch(URL_GAS, {
+                    method: 'POST',
+                    headers: { "Content-Type": "text/plain;charset=utf-8" },
+                    body: JSON.stringify({
+                        action: 'updateStatus',
+                        token: ADMIN_TOKEN,
+                        reportId: reportId,
+                        status: newStatus
+                    })
+                });
+                const result = await response.json();
+                if (result.success) {
+                    const item = semuaData.find(d => d.reportId === reportId);
+                    if (item) item.status = newStatus;
+                    renderTabel();
+                    updateRingkasan();
+                } else {
+                    alert('Gagal mengubah status: ' + (result.error || 'kesalahan tidak diketahui'));
+                    select.disabled = false;
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Gagal terhubung ke server saat mengubah status.');
+                select.disabled = false;
+            }
+        }
+
+        // FUNGSI EXPORT CSV
+        function exportKeCSV() {
+            if (semuaData.length === 0) {
+                alert("Belum ada data untuk diexport!");
+                return;
+            }
+            let csvContent = "data:text/csv;charset=utf-8,";
+            csvContent += "ID Laporan,Tanggal,Nama,Kategori,Isi Aduan,Status,Tindak Lanjut\n";
+            
+            semuaData.forEach(item => {
+                let id = item.reportId || "-";
+                let tgl = item.timestamp || "-";
+                let nama = item.nama ? item.nama.replace(/,/g, " ") : "-";
+                let kat = item.kategori || "-";
+                let aduan = item.isiAduan ? item.isiAduan.replace(/,/g, " ").replace(/\n/g, " ") : "-";
+                let status = item.status || "Menunggu";
+                let tindak = item.tindakLanjut ? item.tindakLanjut.replace(/,/g, " ").replace(/\n/g, " ") : "-";
+                
+                csvContent += `${id},${tgl},${nama},${kat},${aduan},${status},${tindak}\n`;
+            });
+            
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "Laporan_Pengaduan_BPS.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // FUNGSI MODAL TINDAK LANJUT
+        let modalTL;
+
+        function bukaModalTindakLanjut(id) {
+            document.getElementById('tl-report-id').value = id;
+            
+            const item = semuaData.find(d => d.reportId === id);
+            document.getElementById('tl-catatan').value = item && item.tindakLanjut ? item.tindakLanjut : '';
+
+            if (!modalTL) {
+                modalTL = new bootstrap.Modal(document.getElementById('modalTindakLanjut'));
+            }
+            modalTL.show();
+        }
+
+        async function simpanTindakLanjut() {
+            const id = document.getElementById('tl-report-id').value;
+            const catatan = document.getElementById('tl-catatan').value.trim();
+            
+            if(!catatan) {
+                alert("Catatan tindak lanjut tidak boleh kosong!");
+                return;
+            }
+
+            const btn = document.querySelector('#modalTindakLanjut .btn-primary');
+            btn.disabled = true;
+            btn.innerText = 'Menyimpan...';
+
+            try {
+                const response = await fetch(URL_GAS, {
+                    method: 'POST',
+                    headers: { "Content-Type": "text/plain;charset=utf-8" },
+                    body: JSON.stringify({
+                        action: 'tindakLanjut',
+                        token: ADMIN_TOKEN,
+                        reportId: id,
+                        catatan: catatan
+                    })
+                });
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert('Berhasil menyimpan entri tindak lanjut!');
+                    modalTL.hide();
+                    
+                    const item = semuaData.find(d => d.reportId === id);
+                    if (item) item.tindakLanjut = catatan;
+                } else {
+                    alert('Gagal: ' + (result.error || 'Server menolak permintaan.'));
+                }
+            } catch (err) {
+                alert('Gagal terhubung ke server.');
+            } finally {
+                btn.disabled = false;
+                btn.innerText = 'Simpan Catatan';
+            }
+        }
+
+        document.getElementById('inp-search').addEventListener('input', renderTabel);
+        document.getElementById('filter-kategori').addEventListener('change', renderTabel);
+        document.getElementById('filter-status').addEventListener('change', renderTabel);
+
+        window.onload = ambilDataDashboard;
+    </script>
+</body>
+</html>
